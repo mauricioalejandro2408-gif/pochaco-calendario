@@ -1,99 +1,86 @@
-// ================================
-// POCHACO - CALENDARIO
-// ================================
-
-// PIN inicial
-let PIN = localStorage.getItem("pochacoPin") || "1234";
-
-// Estado de la aplicación
+let PIN = localStorage.getItem('pochacoPin') || "1234";
 let unlocked = false;
-
-// Mes que estamos viendo
 let current = new Date();
 
-// Eventos guardados
 let events = JSON.parse(
-    localStorage.getItem("pochacoEvents") || "[]"
+    localStorage.getItem('pochacoEvents') || '[]'
 );
 
-// Nombres de los meses
 const months = [
-    "Enero",
-    "Febrero",
-    "Marzo",
-    "Abril",
-    "Mayo",
-    "Junio",
-    "Julio",
-    "Agosto",
-    "Septiembre",
-    "Octubre",
-    "Noviembre",
-    "Diciembre"
+    'Enero',
+    'Febrero',
+    'Marzo',
+    'Abril',
+    'Mayo',
+    'Junio',
+    'Julio',
+    'Agosto',
+    'Septiembre',
+    'Octubre',
+    'Noviembre',
+    'Diciembre'
 ];
 
-// Contenedor principal
-const app = document.getElementById("app");
-
-
-// ================================
-// GUARDAR DATOS
-// ================================
+const app = document.getElementById('app');
 
 function save() {
     localStorage.setItem(
-        "pochacoEvents",
+        'pochacoEvents',
         JSON.stringify(events)
     );
 }
 
-
-// ================================
-// SEGURIDAD PARA TEXTO HTML
-// ================================
-
-function esc(text) {
-    return String(text).replace(
+function esc(s) {
+    return String(s).replace(
         /[&<>'"]/g,
-        character => ({
-            "&": "&amp;",
-            "<": "&lt;",
-            ">": "&gt;",
-            "'": "&#39;",
-            '"': "&quot;"
-        }[character])
+        c => ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            "'": '&#39;',
+            '"': '&quot;'
+        }[c])
     );
 }
 
+function getGreeting() {
 
-// ================================
-// RENDERIZAR LA APP
-// ================================
+    const hour = new Date().getHours();
+
+    if (hour >= 5 && hour < 12) {
+        return {
+            title: "Buenos días, Luuu",
+            message: "Esperamos que tengas un día bonito 😊"
+        };
+    }
+
+    if (hour >= 12 && hour < 19) {
+        return {
+            title: "Buenas tardes, Luuu",
+            message: "¿Cómo va tu día? 😊"
+        };
+    }
+
+    return {
+        title: "Buenas noches, Luuu",
+        message: "Te extrañaremos 😊"
+    };
+}
 
 function render() {
 
-    // Si está bloqueado mostramos el PIN
     if (!unlocked) {
 
         app.innerHTML = `
             <div
                 class="shell"
-                style="
-                    min-height:100vh;
-                    display:grid;
-                    place-items:center;
-                "
+                style="min-height:100vh;display:grid;place-items:center"
             >
-
                 <div class="card modalbox pin">
 
-                    <div class="logo">
-                        P
-                    </div>
+                    <div class="logo">P</div>
 
-                    <h2>
-                        Pochaco
-                    </h2>
+                    <h2>Pochaco</h2>
 
                     <p style="color:#6b899b">
                         Ingresa tu PIN para abrir tu calendario.
@@ -107,10 +94,7 @@ function render() {
                         placeholder="••••"
                     >
 
-                    <div
-                        id="err"
-                        class="error"
-                    ></div>
+                    <div id="err" class="error"></div>
 
                     <button
                         class="btn primary"
@@ -120,228 +104,135 @@ function render() {
                     </button>
 
                 </div>
-
             </div>
         `;
 
         setTimeout(() => {
-            document
-                .getElementById("pin")
-                ?.focus();
+            document.getElementById('pin')?.focus();
         }, 50);
 
         return;
     }
 
+    const y = current.getFullYear();
+    const m = current.getMonth();
 
-    // ================================
-    // DATOS DEL MES
-    // ================================
+    const greeting = getGreeting();
 
-    const year = current.getFullYear();
-    const month = current.getMonth();
+    const first = new Date(y, m, 1);
+    const start = (first.getDay() + 6) % 7;
 
-    const firstDay = new Date(
-        year,
-        month,
-        1
-    );
+    const days = new Date(
+        y,
+        m + 1,
+        0
+    ).getDate();
 
-    // Convertimos domingo = 0 a lunes = 0
-    const startDay =
-        (firstDay.getDay() + 6) % 7;
+    const prevDays = new Date(
+        y,
+        m,
+        0
+    ).getDate();
 
-    const daysInMonth =
-        new Date(
-            year,
-            month + 1,
-            0
-        ).getDate();
-
-    const daysInPreviousMonth =
-        new Date(
-            year,
-            month,
-            0
-        ).getDate();
-
-
-    // ================================
-    // CREAR CELDAS DEL CALENDARIO
-    // ================================
-
-    let cells = "";
+    let cells = '';
 
     for (let i = 0; i < 42; i++) {
 
-        let day =
-            i - startDay + 1;
-
-        let displayYear = year;
-        let displayMonth = month;
-
+        let d = i - start + 1;
+        let yy = y;
+        let mm = m;
         let muted = false;
 
+        if (d < 1) {
 
-        // Días del mes anterior
-        if (day < 1) {
-
-            day =
-                daysInPreviousMonth + day;
-
-            displayMonth =
-                month - 1;
-
+            d = prevDays + d;
+            mm = m - 1;
             muted = true;
 
-            if (displayMonth < 0) {
+            if (mm < 0) {
+                mm = 11;
+                yy--;
+            }
 
-                displayMonth = 11;
-                displayYear--;
+        } else if (d > days) {
 
+            d = d - days;
+            mm = m + 1;
+            muted = true;
+
+            if (mm > 11) {
+                mm = 0;
+                yy++;
             }
         }
 
-
-        // Días del mes siguiente
-        else if (day > daysInMonth) {
-
-            day =
-                day - daysInMonth;
-
-            displayMonth =
-                month + 1;
-
-            muted = true;
-
-            if (displayMonth > 11) {
-
-                displayMonth = 0;
-                displayYear++;
-
-            }
-        }
-
-
-        // Fecha completa
         const key =
-            `${displayYear}-${String(displayMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+            `${yy}-${String(mm + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
 
+        const ev = events.filter(
+            e => e.date === key
+        );
 
-        // Eventos de ese día
-        const dayEvents =
-            events.filter(
-                event => event.date === key
-            );
-
-
-        // Fecha actual
         const today = new Date();
 
-        const todayKey =
-            `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+        const istoday =
+            key ===
+            `${today.getFullYear()}-${String(
+                today.getMonth() + 1
+            ).padStart(2, '0')}-${String(
+                today.getDate()
+            ).padStart(2, '0')}`;
 
-
-        const isToday =
-            key === todayKey;
-
-
-        // Crear celda
         cells += `
             <div
-                class="day ${muted ? "muted" : ""} ${isToday ? "today" : ""}"
+                class="day ${muted ? 'muted' : ''} ${istoday ? 'today' : ''}"
                 onclick="openAdd('${key}')"
             >
 
-                <div class="num">
-                    ${day}
-                </div>
+                <div class="num">${d}</div>
 
-                ${
-                    dayEvents
-                        .map(event => `
-                            <div
-                                class="event ${event.reminder ? "reminder" : ""}"
-                                title="${esc(event.title)}"
-                            >
-                                ${
-                                    event.reminder
-                                        ? "⏰ "
-                                        : ""
-                                }
-
-                                ${esc(event.title)}
-                            </div>
-                        `)
-                        .join("")
-                }
+                ${ev.map(e => `
+                    <div
+                        class="event ${e.reminder ? 'reminder' : ''}"
+                        title="${esc(e.title)}"
+                    >
+                        ${e.reminder ? '⏰ ' : ''}
+                        ${esc(e.title)}
+                    </div>
+                `).join('')}
 
             </div>
         `;
     }
 
+    const todayString =
+        new Date().toISOString().slice(0, 10);
 
-    // ================================
-    // PRÓXIMOS EVENTOS
-    // ================================
-
-    const todayDate =
-        new Date()
-            .toISOString()
-            .slice(0, 10);
-
-    const upcoming =
-        events
-            .filter(
-                event =>
-                    event.date >= todayDate
-            )
-            .sort(
-                (a, b) =>
-                    a.date.localeCompare(b.date)
-            )
-            .slice(0, 5);
-
-
-    // ================================
-    // HTML PRINCIPAL
-    // ================================
+    const upcoming = events
+        .filter(e => e.date >= todayString)
+        .sort((a, b) =>
+            a.date.localeCompare(b.date)
+        )
+        .slice(0, 5);
 
     app.innerHTML = `
 
         <div class="shell">
 
-            <!-- CABECERA -->
-
             <div class="topbar">
 
                 <div class="brand">
 
-                    <div class="logo">
-                        P
-                    </div>
+                    <div class="logo">P</div>
 
                     <div>
-
-                        <h1>
-                            Pochaco
-                        </h1>
-
-                        <small>
-                            Mi calendario personal
-                        </small>
-
+                        <h1>Pochaco</h1>
+                        <small>Mi calendario personal</small>
                     </div>
 
                 </div>
 
-
-                <div
-                    style="
-                        display:flex;
-                        gap:8px;
-                    "
-                >
+                <div style="display:flex;gap:8px">
 
                     <button
                         class="btn"
@@ -361,13 +252,40 @@ function render() {
 
             </div>
 
+            <div
+                class="card"
+                style="
+                    padding:20px;
+                    margin-bottom:18px;
+                    background:linear-gradient(
+                        135deg,
+                        #fff7fb,
+                        #f2fbff
+                    )
+                "
+            >
 
-            <!-- CONTENIDO -->
+                <h2
+                    style="
+                        margin:0 0 6px;
+                        color:#687b91
+                    "
+                >
+                    ${greeting.title}
+                </h2>
+
+                <p
+                    style="
+                        margin:0;
+                        color:#8796a5
+                    "
+                >
+                    ${greeting.message}
+                </p>
+
+            </div>
 
             <div class="layout">
-
-
-                <!-- CALENDARIO -->
 
                 <section class="card">
 
@@ -383,8 +301,7 @@ function render() {
                             </button>
 
                             <h2>
-                                ${months[month]}
-                                ${year}
+                                ${months[m]} ${y}
                             </h2>
 
                             <button
@@ -396,7 +313,6 @@ function render() {
 
                         </div>
 
-
                         <button
                             class="btn primary"
                             onclick="openAdd()"
@@ -405,9 +321,6 @@ function render() {
                         </button>
 
                     </div>
-
-
-                    <!-- DÍAS -->
 
                     <div class="weekdays">
 
@@ -421,19 +334,11 @@ function render() {
 
                     </div>
 
-
-                    <!-- CUADRÍCULA -->
-
                     <div class="grid">
-
                         ${cells}
-
                     </div>
 
                 </section>
-
-
-                <!-- PANEL LATERAL -->
 
                 <aside class="card side">
 
@@ -445,50 +350,36 @@ function render() {
 
                         ${
                             upcoming.length
+                                ? upcoming.map(e => `
+                                    <div class="item">
 
-                                ? upcoming
-                                    .map(event => `
-                                        <div class="item">
+                                        <strong>
+                                            ${e.reminder ? '⏰ ' : ''}
+                                            ${esc(e.title)}
+                                        </strong>
 
-                                            <strong>
-                                                ${
-                                                    event.reminder
-                                                        ? "⏰ "
-                                                        : ""
-                                                }
+                                        <span>
+                                            ${e.date}
+                                            ${e.time ? ' · ' + e.time : ''}
+                                        </span>
 
-                                                ${esc(event.title)}
-                                            </strong>
+                                        ${
+                                            e.note
+                                                ? `
+                                                    <span
+                                                        style="
+                                                            display:block;
+                                                            margin-top:4px
+                                                        "
+                                                    >
+                                                        ${esc(e.note)}
+                                                    </span>
+                                                `
+                                                : ''
+                                        }
 
-                                            <span>
-                                                ${event.date}
-
-                                                ${
-                                                    event.time
-                                                        ? " · " + event.time
-                                                        : ""
-                                                }
-                                            </span>
-
-                                            ${
-                                                event.note
-                                                    ? `
-                                                        <span
-                                                            style="
-                                                                display:block;
-                                                                margin-top:4px;
-                                                            "
-                                                        >
-                                                            ${esc(event.note)}
-                                                        </span>
-                                                    `
-                                                    : ""
-                                            }
-
-                                        </div>
-                                    `)
-                                    .join("")
-
+                                    </div>
+                                `).join('')
                                 : `
                                     <div class="empty">
                                         Todavía no tienes eventos.
@@ -504,15 +395,7 @@ function render() {
 
         </div>
 
-
-        <!-- ==========================
-             MODAL NUEVO EVENTO
-        =========================== -->
-
-        <div
-            id="modal"
-            class="modal"
-        >
+        <div id="modal" class="modal">
 
             <div class="card modalbox">
 
@@ -520,53 +403,40 @@ function render() {
                     Nuevo evento
                 </h3>
 
-
-                <label>
-                    Fecha
-                </label>
+                <label>Fecha</label>
 
                 <input
                     id="date"
                     type="date"
                 >
 
-
-                <label>
-                    Título
-                </label>
+                <label>Título</label>
 
                 <input
                     id="title"
                     placeholder="Ej. Entregar proyecto"
                 >
 
-
-                <label>
-                    Hora (opcional)
-                </label>
+                <label>Hora (opcional)</label>
 
                 <input
                     id="time"
                     type="time"
                 >
 
-
-                <label>
-                    Nota (opcional)
-                </label>
+                <label>Nota (opcional)</label>
 
                 <textarea
                     id="note"
                     placeholder="Escribe algo importante..."
                 ></textarea>
 
-
                 <label
                     style="
                         display:flex;
                         align-items:center;
                         gap:8px;
-                        font-weight:700;
+                        font-weight:700
                     "
                 >
 
@@ -579,7 +449,6 @@ function render() {
                     Activar recordatorio
 
                 </label>
-
 
                 <div class="actions">
 
@@ -603,22 +472,13 @@ function render() {
 
         </div>
 
-
-        <!-- ==========================
-             AJUSTES
-        =========================== -->
-
-        <div
-            id="settings"
-            class="modal"
-        >
+        <div id="settings" class="modal">
 
             <div class="card settingsbox">
 
                 <h3>
                     ⚙️ Ajustes de Pochaco
                 </h3>
-
 
                 <label>
                     Nuevo PIN
@@ -632,12 +492,9 @@ function render() {
                     placeholder="4 a 8 números"
                 >
 
-
                 <div class="hint">
-                    El PIN se guarda solamente
-                    en este navegador.
+                    El PIN se guarda solamente en este navegador.
                 </div>
-
 
                 <div class="actions">
 
@@ -657,15 +514,13 @@ function render() {
 
                 </div>
 
-
                 <hr
                     style="
                         border:0;
                         border-top:1px solid #d9eef7;
-                        margin:20px 0;
+                        margin:20px 0
                     "
                 >
-
 
                 <button
                     class="btn"
@@ -674,245 +529,154 @@ function render() {
                     🔔 Activar notificaciones
                 </button>
 
-
                 <div class="hint">
-                    Así el navegador podrá mostrar
-                    avisos cuando abras el calendario.
+                    Así el navegador podrá mostrar avisos
+                    cuando abras el calendario.
                 </div>
 
             </div>
 
         </div>
-
     `;
 
-
-    // Revisar recordatorios
     checkReminders();
 }
 
-
-// ================================
-// DESBLOQUEAR
-// ================================
-
 function unlock() {
 
-    const pinInput =
-        document.getElementById("pin");
+    const v =
+        document.getElementById('pin').value;
 
-    const error =
-        document.getElementById("err");
-
-    const value =
-        pinInput.value;
-
-
-    if (value === PIN) {
+    if (v === PIN) {
 
         unlocked = true;
-
         render();
 
     } else {
 
-        error.textContent =
-            "PIN incorrecto.";
+        document.getElementById('err').textContent =
+            'PIN incorrecto.';
 
-        pinInput.value = "";
-
-        pinInput.focus();
+        document.getElementById('pin').value = '';
     }
 }
-
-
-// ================================
-// BLOQUEAR
-// ================================
 
 function lock() {
 
     unlocked = false;
-
     render();
 }
-
-
-// ================================
-// AJUSTES
-// ================================
 
 function openSettings() {
 
     document
-        .getElementById("settings")
-        .classList.add("open");
+        .getElementById('settings')
+        .classList.add('open');
 }
-
 
 function closeSettings() {
 
     document
-        .getElementById("settings")
-        .classList.remove("open");
+        .getElementById('settings')
+        .classList.remove('open');
 }
-
-
-// ================================
-// CAMBIAR PIN
-// ================================
 
 function changePin() {
 
-    const input =
-        document.getElementById("newPin");
+    const v =
+        document.getElementById('newPin').value;
 
-    const value =
-        input.value;
+    if (!/^\d{4,8}$/.test(v)) {
 
-
-    if (!/^\d{4,8}$/.test(value)) {
-
-        alert(
-            "El PIN debe tener entre 4 y 8 números."
+        return alert(
+            'El PIN debe tener entre 4 y 8 números.'
         );
-
-        return;
     }
 
-
-    PIN = value;
+    PIN = v;
 
     localStorage.setItem(
-        "pochacoPin",
+        'pochacoPin',
         PIN
     );
 
-
-    input.value = "";
-
     closeSettings();
 
-
     alert(
-        "PIN actualizado correctamente."
+        'PIN actualizado correctamente.'
     );
 }
 
-
-// ================================
-// NOTIFICACIONES
-// ================================
-
 async function requestNotifications() {
 
-    if (!("Notification" in window)) {
+    if (!('Notification' in window)) {
 
-        alert(
-            "Este navegador no permite notificaciones."
+        return alert(
+            'Este navegador no permite notificaciones.'
         );
-
-        return;
     }
 
-
-    const permission =
+    const p =
         await Notification.requestPermission();
 
-
-    if (permission === "granted") {
-
-        alert(
-            "Notificaciones activadas."
-        );
-
-    } else {
-
-        alert(
-            "No se activaron las notificaciones."
-        );
-    }
+    alert(
+        p === 'granted'
+            ? 'Notificaciones activadas.'
+            : 'No se activaron las notificaciones.'
+    );
 }
-
-
-// ================================
-// COMPROBAR RECORDATORIOS
-// ================================
 
 function checkReminders() {
 
     if (
-        !("Notification" in window) ||
-        Notification.permission !== "granted"
+        !('Notification' in window) ||
+        Notification.permission !== 'granted'
     ) {
         return;
     }
 
-
     const now = new Date();
-
 
     const today =
         now.toISOString().slice(0, 10);
 
-
-    const currentHour =
-        String(now.getHours()).padStart(2, "0");
-
-
-    const currentMinute =
-        String(now.getMinutes()).padStart(2, "0");
-
-
-    const currentTime =
-        currentHour + ":" + currentMinute;
-
+    const hm =
+        String(now.getHours()).padStart(2, '0') +
+        ':' +
+        String(now.getMinutes()).padStart(2, '0');
 
     events
-        .filter(event =>
-
-            event.reminder &&
-            event.date === today &&
-            event.time &&
-            event.time <= currentTime &&
-            !event.notified
-
+        .filter(
+            e =>
+                e.reminder &&
+                e.date === today &&
+                e.time &&
+                e.time <= hm &&
+                !e.notified
         )
-        .forEach(event => {
+        .forEach(e => {
 
             new Notification(
-                "Pochaco — recordatorio",
+                'Pochaco — recordatorio',
                 {
-                    body: event.title
+                    body: e.title
                 }
             );
 
-
-            event.notified = true;
+            e.notified = true;
         });
-
 
     save();
 }
 
-
-// ================================
-// CAMBIAR MES
-// ================================
-
-function move(amount) {
+function move(n) {
 
     current.setMonth(
-        current.getMonth() + amount
+        current.getMonth() + n
     );
 
     render();
 }
-
-
-// ================================
-// ABRIR NUEVO EVENTO
-// ================================
 
 function openAdd(date) {
 
@@ -924,103 +688,47 @@ function openAdd(date) {
                 .slice(0, 10);
     }
 
-
-    const modal =
-        document.getElementById("modal");
-
-
-    modal.classList.add("open");
-
-
-    document.getElementById("date").value =
-        date;
-
-
-    document.getElementById("title").value =
-        "";
-
-
-    document.getElementById("time").value =
-        "";
-
-
-    document.getElementById("note").value =
-        "";
-
-
-    document.getElementById("reminder").checked =
-        false;
-
+    document
+        .getElementById('modal')
+        .classList.add('open');
 
     document
-        .getElementById("title")
+        .getElementById('date')
+        .value = date;
+
+    document
+        .getElementById('title')
         .focus();
 }
-
-
-// ================================
-// CERRAR MODAL
-// ================================
 
 function closeModal() {
 
     document
-        .getElementById("modal")
-        .classList.remove("open");
+        .getElementById('modal')
+        .classList.remove('open');
 }
-
-
-// ================================
-// AGREGAR EVENTO
-// ================================
 
 function addEvent() {
 
     const title =
         document
-            .getElementById("title")
+            .getElementById('title')
             .value
             .trim();
-
 
     const date =
         document
-            .getElementById("date")
+            .getElementById('date')
             .value;
 
-
-    const time =
-        document
-            .getElementById("time")
-            .value;
-
-
-    const note =
-        document
-            .getElementById("note")
-            .value
-            .trim();
-
-
-    const reminder =
-        document
-            .getElementById("reminder")
-            .checked;
-
-
-    // Comprobar datos
     if (!title || !date) {
 
-        alert(
-            "Escribe un título y una fecha."
+        return alert(
+            'Escribe un título y una fecha.'
         );
-
-        return;
     }
 
-
-    // Crear evento
-    const newEvent = {
+    events.push({
 
         id: Date.now(),
 
@@ -1028,43 +736,35 @@ function addEvent() {
 
         date: date,
 
-        time: time,
+        time:
+            document
+                .getElementById('time')
+                .value,
 
-        note: note,
+        note:
+            document
+                .getElementById('note')
+                .value,
 
-        reminder: reminder,
+        reminder:
+            document
+                .getElementById('reminder')
+                .checked,
 
         notified: false
-    };
 
-
-    // Guardar
-    events.push(newEvent);
+    });
 
     save();
 
-
-    // Cerrar ventana
     closeModal();
 
-
-    // Actualizar calendario
     render();
 }
-
-
-// ================================
-// REVISAR RECORDATORIOS CADA 30 SEG.
-// ================================
 
 setInterval(
     checkReminders,
     30000
 );
-
-
-// ================================
-// INICIAR POCHACO
-// ================================
 
 render();
